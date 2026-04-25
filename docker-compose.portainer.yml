@@ -3,8 +3,10 @@
 
 services:
   app:
-    # Use pre-built image from Docker Hub
-    image: docuseal/docuseal:latest
+    # Build custom image with Pro features
+    build:
+      context: .
+      dockerfile: Dockerfile.custom
     ports:
       - "3000:3000"
     volumes:
