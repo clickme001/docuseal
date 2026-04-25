@@ -77,41 +77,73 @@ This is a fork of <a href="https://github.com/docusealco/docuseal">DocuSeal</a> 
 
 |Heroku|Railway|Portainer|
 |:--:|:---:|:---:|
-| [<img alt="Deploy on Heroku" src="https://www.herokucdn.com/deploy/button.svg" height="40">](https://heroku.com/deploy?template=https://github.com/docusealco/docuseal-heroku) | [<img alt="Deploy on Railway" src="https://railway.app/button.svg" height="40">](https://railway.com/deploy/IGoDnc?referralCode=ruU7JR)| Use `docker-compose.portainer.yml` |
+| [<img alt="Deploy on Heroku" src="https://www.herokucdn.com/deploy/button.svg" height="40">](https://heroku.com/deploy?template=https://github.com/docusealco/docuseal-heroku) | [<img alt="Deploy on Railway" src="https://railway.app/button.svg" height="40">](https://railway.com/deploy/IGoDnc?referralCode=ruU7JR)| [<img alt="Deploy on Portainer" src="https://www.portainer.io/images/portainer-logo-dark.svg" height="40">](docker-compose.portainer.yml) |
 |**DigitalOcean**|**Render**|
 | [<img alt="Deploy on DigitalOcean" src="https://www.deploytodo.com/do-btn-blue.svg" height="40">](https://cloud.digitalocean.com/apps/new?repo=https://github.com/docusealco/docuseal-digitalocean/tree/master&refcode=421d50f53990) | [<img alt="Deploy to Render" src="https://render.com/images/deploy-to-render-button.svg" height="40">](https://render.com/deploy?repo=https://github.com/docusealco/docuseal-render) |
 
-### Docker
+### Docker (SQLite - Easiest)
 
 ```sh
 docker run --name docuseal \
   -p 3000:3000 \
-  -v.:/data \
+  -v docuseal_data:/data \
   -e PRODUCT_NAME=MySign \
   -e HIDE_POWERED_BY=true \
   -e MAIL_FROM_ADDRESS=noreply@example.com \
+  -e SECRET_KEY_BASE=$(openssl rand -base64 32) \
+  -e ENCRYPTION_KEY=$(openssl rand -base64 32) \
   docuseal/docuseal
 ```
 
-### Docker Compose
+By default DocuSeal uses **SQLite** for storage (no separate database needed). For production, use Docker Compose or Portainer below.
 
-Download docker-compose.yml into your private server:
+### Docker Compose (SQLite)
+
 ```sh
 curl https://raw.githubusercontent.com/clickme001/docuseal/main/docker-compose.portainer.yml > docker-compose.yml
 ```
 
-Run with custom domain and Pro features:
+Edit the file to add your environment variables (see below), then:
 ```sh
-sudo HOST=your-domain.com \
-  PRODUCT_NAME=MySign \
-  HIDE_POWERED_BY=true \
-  MAIL_FROM_ADDRESS=noreply@your-domain.com \
-  docker compose up
+docker compose up -d
 ```
 
-### Portainer Stack
+### Portainer Stack (SQLite - Recommended for Self-Hosted)
 
-Use the `docker-compose.portainer.yml` file in Portainer's Stack editor. Configure environment variables in the Portainer UI under the stack's environment section.
+**Step 1: Prepare your environment variables**
+
+Generate secure keys (run once):
+```bash
+openssl rand -base64 32  # Use this for SECRET_KEY_BASE
+openssl rand -base64 32  # Use this for ENCRYPTION_KEY
+```
+
+Create a `.env` file or set in Portainer UI:
+```bash
+PRODUCT_NAME=MyCompany
+HIDE_POWERED_BY=true
+MAIL_FROM_ADDRESS=noreply@mycompany.com
+SECRET_KEY_BASE=your-generated-key-here
+ENCRYPTION_KEY=your-generated-key-here
+```
+
+**Step 2: Create the stack in Portainer**
+
+1. Open Portainer (http://your-server:9000)
+2. Go to **Stacks** → **Add Stack**
+3. **Name**: `docuseal`
+4. **Build method**: **Web editor**
+5. **Compose file**: Copy-paste contents from `docker-compose.portainer.yml` (in this repo)
+6. Click **"Environment variables"** section and add your variables from Step 1
+7. Click **Deploy**
+
+**Step 3: Access your instance**
+
+Wait 2-3 minutes, then visit `http://your-server:3000`. Create an admin account and go to **Settings → Personalization** to upload your custom logo.
+
+**Optional: Enable Redis for background jobs**
+
+Uncomment the `redis` service in `docker-compose.portainer.yml` and add `- REDIS_URL=redis://redis:6379/0` to the app environment if you need Sidekiq background processing (typically for bulk sends).
 
 ## Custom Logo Upload
 
