@@ -1,0 +1,104 @@
+# DocuSeal with Pro Features - Portainer Stack
+# Copy this into Portainer's Stack editor
+
+services:
+  app:
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Option 1: Build locally (if you have build capabilities in Portainer)
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.custom
+    # Option 2: Use pre-built image from your registry
+    image: ghcr.io/YOUR_USERNAME/docuseal-pro:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - docuseal_data:/data/docuseal
+    environment:
+      # Database
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/docuseal
+      # Pro Features - Customize these
+      - PRODUCT_NAME=${PRODUCT_NAME:-MySignApp}
+      - HIDE_POWERED_BY=${HIDE_POWERED_BY:-false}
+      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS:-noreply@yourdomain.com}
+      - PRODUCT_EMAIL_URL=${PRODUCT_EMAIL_URL:-https://www.yourdomain.com}
+      # App Settings
+      - HOST=${HOST:-localhost}
+      - FORCE_SSL=${FORCE_SSL:-}
+      - APP_URL=${APP_URL:-http://localhost:3000}
+      # Security
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:-change_me_in_production}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      # Storage (local or S3)
+      - ACTIVE_STORAGE_SERVICE=${ACTIVE_STORAGE_SERVICE:-local}
+      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID:-}
+      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY:-}
+      - S3_BUCKET=${S3_BUCKET:-}
+      - S3_REGION=${S3_REGION:-}
+      # SMTP Settings (optional)
+      - SMTP_ADDRESS=${SMTP_ADDRESS:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER_NAME=${SMTP_USER_NAME:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_DOMAIN=${SMTP_DOMAIN:-}
+    networks:
+      - docuseal_network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: docuseal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - docuseal_network
+    restart: unless-stopped
+
+  # Optional: Redis for caching/sidekiq
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    networks:
+      - docuseal_network
+    restart: unless-stopped
+
+  # Optional: Caddy reverse proxy for HTTPS
+  caddy:
+    image: caddy:latest
+    command: caddy reverse-proxy --from ${HOST:-localhost} --to app:3000
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data/caddy
+      - caddy_config:/config
+    environment:
+      - HOST=${HOST:-localhost}
+    networks:
+      - docuseal_network
+    restart: unless-stopped
+    profiles:
+      - with-caddy
+
+volumes:
+  docuseal_data:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  docuseal_network:
+    driver: bridge

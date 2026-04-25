@@ -1,0 +1,26 @@
+<div class="card bg-base-100">
+  <div class="card-body">
+    <% if current_account.logo.attached? %>
+      <div class="flex items-center space-x-4 mb-4">
+        <%= image_tag current_account.logo, class: 'h-16 w-auto object-contain' %>
+        <div>
+          <p class="text-sm text-gray-500"><%= t('current_logo') %></p>
+          <%= button_to t('remove_logo'), settings_logo_settings_path, method: :delete, class: 'btn btn-error btn-sm mt-2', data: { turbo_confirm: t('are_you_sure') } %>
+        </div>
+      </div>
+    <% end %>
+
+    <%= form_with url: settings_logo_settings_path, method: :post, multipart: true do |f| %>
+      <div class="form-control">
+        <%= f.label :logo, t('upload_logo'), class: 'label' %>
+        <%= f.file_field :logo, accept: 'image/*', class: 'file-input file-input-bordered w-full', required: !current_account.logo.attached? %>
+        <label class="label">
+          <span class="label-text-alt"><%= t('logo_recommended_size') %>: 200x200px, SVG/PNG/JPG</span>
+        </label>
+      </div>
+      <div class="mt-4">
+        <%= f.submit t('upload'), class: 'btn btn-primary' %>
+      </div>
+    <% end %>
+  </div>
+</div>
